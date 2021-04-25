@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+
+  vuehouse:
+    build:
+      context: .
+      target: dev
+    command: "serve --listen tcp://0.0.0.0:8000 --single dist"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vuehouse.tls=true"
+      - "traefik.http.routers.vuehouse.rule=Host(`vuehouse.docker.localhost`)"
+    networks:
+      - proxy
+
+  traefik:
+    image: traefik:v2.3
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HOME}/.certs:/etc/certs:ro
+      - ${HOME}/.traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${HOME}/.traefik/config.yml:/etc/traefik/config.yml:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik=true"
+    depends_on:
+      - vuehouse
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
